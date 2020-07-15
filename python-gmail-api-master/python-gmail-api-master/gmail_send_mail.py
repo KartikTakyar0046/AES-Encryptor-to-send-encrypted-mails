@@ -15,6 +15,16 @@ from googleapiclient.discovery import build
 from settings import sender_address
 from apiclient import errors
 
+
+from Crypto import Random
+from Crypto.Cipher import AES
+import os
+import os.path
+from os import listdir
+from os.path import isfile, join
+import time
+
+
 # --------------------------------------------------------------------------------------
 # This is the name of the secret file you download from https://console.developers.google.com/iam-admin/projects
 # Give it a name that is unique to this project
@@ -49,14 +59,17 @@ SCOPES = ['https://mail.google.com/',
           'https://www.googleapis.com/auth/gmail.modify',
           'https://www.googleapis.com/auth/gmail.send']
 
+key = b'[EX\xc8\xd5\xbfI{\xa2$\x05(\xd5\x18\xbf\xc0\x85)\x10nc\x94\x02)j\xdf\xcb\xc4\x94\x9d(\x9e'
 
 class Gmail():
 
     def __init__(self):
-        pass
+      pass
 
     def send_mail(self, recipient_address, subject, body):
         print('Sending your message, please wait...')
+        # sub1=encrypt(subject, self.key)
+        # body1=encrypt(body, self.key)
         try:
             message = self.__create_message(sender_address, recipient_address, subject, body)
             credentials = self.get_credentials()
@@ -69,7 +82,7 @@ class Gmail():
         except TypeError:
             print("Please give your information correctly")
             
-            
+      
         
 
 
@@ -90,7 +103,7 @@ class Gmail():
 	                                   'microsoft_chatbot.json')
 
 	    store = Storage(credential_path)
-	    credentials = None
+	    credentials = store.get()
 
 	    if not credentials or credentials.invalid:
 	        flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
@@ -156,15 +169,46 @@ class Gmail():
 
 
 
+def pad(s):
+  return s + b"\0" * (AES.block_size - len(s) % AES.block_size) 
+
+def encrypt(message, key, key_size=256): 
+  message = pad(message)
+  iv = Random.new().read(AES.block_size)
+  cipher = AES.new(key, AES.MODE_CBC, iv)
+  return iv + cipher.encrypt(message)
+
+
+
+
 A = Gmail()
 
 A.get_credentials()
 
 
-to_address = input("enter recipient address: ")
-subject = input("enter subject: ")
-body = input("enter body: ")
 
-A.send_mail(to_address, subject, body)
+to_address = input("enter recipient address: ")
+file_name="dataa.txt"
+plaintext=input('Enter the subject:- ')
+with open(file_name, 'w') as fo:
+    fo.write(plaintext)
+with open(file_name, 'rb') as fo:
+  plaintext=fo.read()
+
+subject=encrypt(plaintext, key)
+
+
+plaintext=input('Enter the body:- ')
+with open(file_name, 'w') as fo:
+    fo.write(plaintext)
+with open(file_name, 'rb') as fo:
+  plaintext=fo.read()
+
+body=encrypt(plaintext, key)
+A.send_mail(to_address, str(subject), str(body))
+
+
+
+
 
 
